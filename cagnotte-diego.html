@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anniversaire Diego - Switch 2</title>
+<style>
+body {
+  font-family: 'Comic Sans MS', cursive,sans-serif;
+  text-align:center;
+  background: linear-gradient(120deg,#f94144,#f3722c,#f9c74f,#90be6d,#577590);
+  color:white;
+  padding:20px;
+  overflow-x:hidden;
+  position:relative;
+}
+.container {
+  background:rgba(0,0,0,0.85);
+  padding:20px;
+  border-radius:20px;
+  max-width:400px;
+  margin:auto;
+  position:relative;
+  z-index:2;
+}
+h1 {
+  color:#ffd500;
+  text-shadow:3px 3px #ff0000;
+  margin-bottom:10px;
+  animation:titleAnim 2s infinite alternate;
+}
+@keyframes titleAnim {
+  0%{text-shadow:3px 3px #ff0000; transform:scale(1);}
+  50%{text-shadow:3px 3px #00f; transform:scale(1.05);}
+  100%{text-shadow:3px 3px #0f0; transform:scale(1);}
+}
+.progress-bar {width:100%; background:#555; border-radius:25px; overflow:hidden; margin:15px 0; height:35px;}
+.progress {height:100%; width:0%; background:linear-gradient(90deg,#ff0000,#ffcc00,#0000ff); text-align:center; line-height:35px; color:black; font-weight:bold; border-radius:25px 0 0 25px; transition:width 1s;}
+input {width:90%; max-width:220px; padding:10px; margin:8px 3px; border-radius:10px; border:none; font-size:16px; text-align:center;}
+button {padding:10px 20px; margin-top:10px; background:#ff0000; color:#ffd500; font-weight:bold; border:2px solid #000; border-radius:15px; font-size:14px; cursor:pointer;}
+button:hover {transform:scale(1.1);}
+ul {text-align:left; margin-top:15px; padding-left:20px; list-style-type:"🏎️";}
+
+.confetti {
+  position:absolute;
+  width:8px;
+  height:8px;
+  opacity:0.8;
+  z-index:1;
+  border-radius:50%;
+  animation:fall linear infinite;
+}
+@keyframes fall {0%{transform:translateY(-30px) rotate(0deg);}100%{transform:translateY(100vh) rotate(360deg);}}
+#merci {
+  position:fixed; top:40%; left:50%;
+  transform:translate(-50%,-50%);
+  font-size:60px; font-weight:bold; color:gold;
+  text-shadow:2px 2px #ff0000, -2px -2px #00f;
+  display:none; z-index:9999; pointer-events:none;
+  animation:merciAnim 1.5s ease-out;
+}
+@keyframes merciAnim {0%{transform:scale(0);opacity:0;}50%{transform:scale(1.5);opacity:1;}100%{transform:scale(1) rotate(360deg);opacity:0;}}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎉 ANNIVERSAIRE DIEGO - SWITCH 2 🎮</h1>
+  <p>Objectif : 499 €</p>
+  <div class="progress-bar"><div class="progress" id="progress">0 €</div></div>
+
+  <p>Nom :</p>
+  <input type="text" id="name" inputmode="text" placeholder="Votre nom">
+  <p>Montant (€) :</p>
+  <input type="number" id="amount" inputmode="decimal" placeholder="€">
+  <br>
+  <button onclick="addContribution()">Ajouter 🏁</button>
+
+  <ul id="contributors"></ul>
+</div>
+
+<div id="merci">MERCI 🎆</div>
+
+<script>
+const SCRIPT_URL = "YOUR_SCRIPT_URL"; // Remplace par ton lien Apps Script
+const goal = 499;
+
+// Confettis animés
+for(let i=0;i<50;i++){
+  const confetti=document.createElement('div');
+  confetti.className='confetti';
+  confetti.style.left=Math.random()*window.innerWidth+'px';
+  confetti.style.backgroundColor=`hsl(${Math.random()*360},100%,50%)`;
+  confetti.style.animationDuration=(2+Math.random()*3)+'s';
+  confetti.style.width=confetti.style.height=(5+Math.random()*8)+'px';
+  document.body.appendChild(confetti);
+}
+
+// Récupération contributions depuis Google Sheets
+async function fetchContributors(){
+  const res=await fetch(SCRIPT_URL);
+  const data=await res.json();
+  updateUI(data);
+  return data;
+}
+
+// Ajouter une contribution
+async function addContribution(){
+  const name=document.getElementById('name').value.trim();
+  const amount=parseFloat(document.getElementById('amount').value);
+  if(!name || isNaN(amount) || amount<=0) return alert("Nom ou montant invalide");
+
+  await fetch(SCRIPT_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`name=${encodeURIComponent(name)}&amount=${amount}`
+  });
+
+  document.getElementById('name').value="";
+  document.getElementById('amount').value="";
+
+  const merci=document.getElementById('merci');
+  merci.style.display='block';
+  setTimeout(()=>merci.style.display='none',1500);
+
+  fetchContributors();
+}
+
+// Mettre à jour l’UI
+function updateUI(contributors){
+  const list=document.getElementById('contributors');
+  list.innerHTML="";
+  let total=0;
+  contributors.forEach(c=>{
+    list.innerHTML+=`<li>${c[0]} : ${c[1]} €</li>`;
+    total+=parseFloat(c[1]);
+  });
+  const progress=document.getElementById('progress');
+  const percent=Math.min((total/goal)*100,100);
+  progress.style.width=percent+"%";
+  progress.textContent=total.toFixed(2)+" €";
+}
+
+// Initial load
+fetchContributors();
+</script>
+
+</body>
+</html>
